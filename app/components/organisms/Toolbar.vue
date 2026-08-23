@@ -17,6 +17,7 @@ const viewType = useCookie<NewsViewType>('news-view-type', {
 
 const setFilter = (value: string) => {
   router.push({
+    path: '/news/1',
     query: {
       ...route.query,
       source: value,
