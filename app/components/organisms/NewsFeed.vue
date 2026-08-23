@@ -14,7 +14,7 @@ defineProps<{
 <template>
   <div class="mb-15">
     <OrganismsNewsList
-      v-if="items.length > 0"
+      v-if="items?.length > 0"
       :items="items"
       :view-type="viewType"
     />
