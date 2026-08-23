@@ -1,6 +1,7 @@
 <template>
   <div class="app">
     <div class="container">
+      <OrganismsHeader />
       <OrganismsToolbar />
     </div>
 

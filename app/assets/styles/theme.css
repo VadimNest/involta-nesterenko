@@ -8,6 +8,8 @@
   --color-gray-200: #dcdcdc;
   --color-gray-300: #e5e5e5;
 
+  --shadow-card: 0 2px 10px 0 rgba(0, 0, 0, 0.05);
+
   --font-sans:
     Arial,
     BlinkMacSystemFont,
