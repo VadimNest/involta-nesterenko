@@ -13,7 +13,7 @@ watch(
 
 const updateSearchQuery = debounce((value: string) => {
   router.push({
-    path: '/',
+    path: '/news/1',
     query: {
       ...route.query,
       search: value.trim() ? value.trim() : undefined,
@@ -29,7 +29,7 @@ const resetFilters = () => {
   searchQuery.value = '';
 
   router.push({
-    path: '/',
+    path: '/news/1',
     query: {
       source: 'all',
     },

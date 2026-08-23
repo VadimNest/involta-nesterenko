@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import type { NewsViewType } from '~/types/view';
-import type { NewsItem } from '~/types/news';
+import { useNewsStore } from '~/stores/useNewsStore';
+import { storeToRefs } from 'pinia';
 
 const route = useRoute();
+
+const newsStore = useNewsStore();
+
+const { items: newsItems, totalItems: totalNewsCount } = storeToRefs(newsStore);
 
 const viewType = useCookie<NewsViewType>('news-view-type', {
   default: () => 'grid',
@@ -10,40 +15,72 @@ const viewType = useCookie<NewsViewType>('news-view-type', {
 
 const currentNewsPage = computed(() => Number(route.params.id) || 1);
 
-const totalNewsCount = ref(25);
+const serverQueryParams = computed(() => ({
+  source: (route.query.source as string) || 'all',
+  search: (route.query.search as string) || '',
+  page: currentNewsPage.value,
+  limit: 10,
+}));
 
-const newsItems = ref<NewsItem[]>([
-  {
-    id: 1,
-    title: 'Первые земельные участки реализованы на специальных торгах для малого бизнеса',
-    description: 'На каждый участок претендовали в среднем шесть участников. Стоимость одной из сделок выросла в ходе аукциона в рекордные 26 раз. Все подробности соглашений доступны на официальном портале.',
-    source: 'Mos.ru',
-    date: '23.08.2026',
-    link: 'https://mos.ru',
+const cacheKey = computed(
+  () =>
+    `news-list-p-${currentNewsPage.value}-s-${serverQueryParams.value.source}-q-${serverQueryParams.value.search}`,
+);
+
+const { status, error, refresh } = await useAsyncData(
+  cacheKey.value,
+  async () => {
+    const data = await $fetch('/api/news', { query: serverQueryParams.value });
+
+    newsStore.setNewsData(data?.items || [], data?.total || 0);
+
+    return data;
   },
   {
-    id: 2,
-    title: 'ЦСКА сыграет с «Локомотивом» в центральном матче тура РПЛ',
-    description: 'Московское дерби пройдет на домашнем стадионе армейцев. Тренерские штабы уже определились со стартовыми составами команд на эту игру. Читайте подробности события в источнике.',
-    source: 'Lenta.ru',
-    date: '22.08.2026',
-    link: 'https://lenta.ru',
-    image: 'https://lenta.ru',
+    watch: [cacheKey],
   },
-  {
-    id: 3,
-    title: 'Короткий заголовок',
-    description: 'Тестовое описание для проверки минимальной высоты заголовка (min-h) в режиме сетки grid на десктопе. Короткие заголовки не должны ломать ровную линию подвалов карточек.',
-    source: 'Mos.ru',
-    date: '21.08.2026',
-    link: 'https://mos.ru',
-  }
-]);
+);
 </script>
 
 <template>
-  <div :key="route.fullPath" class="container mx-auto px-4 py-6">
+  <div>
+    <div
+      v-if="status === 'pending'"
+      class="text-center py-20 text-gray-200 font-bold"
+    >
+      Загрузка...
+    </div>
+
+    <div
+      v-else-if="error"
+      class="flex flex-col items-center justify-center py-16 text-center bg-white rounded-card shadow-card px-4"
+    >
+      <div
+        class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-500"
+      >
+        <span class="text-2xl font-bold">!</span>
+      </div>
+
+      <h2 class="text-xl font-bold text-black mb-2">
+        Произошла ошибка при загрузке новостей
+      </h2>
+
+      <p class="text-sm text-gray-200 max-w-sm leading-5 mb-6">
+        Не удалось установить соединение с сервером. Проверьте подключение к
+        интернету или попробуйте позже.
+      </p>
+
+      <button
+        type="button"
+        @click="() => refresh()"
+        class="px-5 py-2.5 rounded-card bg-primary text-white text-sm font-bold shadow-sm transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+      >
+        Повторить попытку
+      </button>
+    </div>
+
     <OrganismsNewsFeed
+      v-else
       :items="newsItems"
       :view-type="viewType"
       :page="currentNewsPage"
